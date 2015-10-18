@@ -1,4 +1,11 @@
 '''
+hmm_model_build.py
+Frederik Roenn Stensaeth
+10.18.15
+
+A Python program that creates a model from the pos-tagged training data. 
+It takes as a command-line argument a file to use for training, and output 
+the model to a file named countmodel.dat.
 '''
 
 import sys
@@ -21,6 +28,8 @@ def getTransitionCounts(sent_list):
 	for sent_raw in sent_list:
 		sent = sent_raw.split(' ')
 		for i, word_tag in enumerate(sent):
+			model[0] += 1
+
 			word_tag_split = word_tag.split('/')
 
 			if len(word_tag_split) == 2:
@@ -63,8 +72,11 @@ def getTransitionProbabilities(transition_counts):
 					count_bi = transition_counts[first][second][0]
 					count_uni = transition_counts[first][0]
 
-					matrix_a[first] = {}
-					matrix_a[first][second] = (count_bi / count_uni)
+					if first in matrix_a:
+						matrix_a[first][second] = (count_bi / count_uni)
+					else:
+						matrix_a[first] = {}
+						matrix_a[first][second] = (count_bi / count_uni)
 
 	return matrix_a
 
@@ -120,8 +132,11 @@ def getEmissionProbabilities(emission_counts):
 					count_bi = emission_counts[state][word][0]
 					count_uni = emission_counts[state][0]
 
-					matrix_b[state] = {}
-					matrix_b[state][word] = (count_bi / count_uni)
+					if state in matrix_b:
+						matrix_b[state][word] = (count_bi / count_uni)
+					else:
+						matrix_b[state] = {}
+						matrix_b[state][word] = (count_bi / count_uni)
 
 	return matrix_b
 
@@ -138,6 +153,8 @@ def getEmissionMatrix(sent_list):
 def hmmBuilder(f):
 	"""
 	"""
+	print('Calculating HMM probabilities...')
+
 	data = ''
 	for line in f:
 		data += line
@@ -145,20 +162,24 @@ def hmmBuilder(f):
 	# Seperates the data into sentences.
 	sent_list = data.split('./.')
 	for i, sent in enumerate(sent_list):
-		sent = re.sub('\n', '', sent)
+		sent = re.sub('\n', ' ', sent)
 		sent_list[i] = sent.strip() + ' ./.'
-		print(sent)
-	print(sent_list)
+		# print(sent)
+	# print(sent_list)
 
 	matrix_a = getTransitionMatrix(sent_list)
 
 	matrix_b = getEmissionMatrix(sent_list)
+
+	# print()
+	# print(matrix_b)
 
 	model = {}
 	model['a'] = matrix_a
 	model['b'] = matrix_b
 
 	pickle.dump(model, open('countmodel.dat', 'wb'))
+	print('Saving to countmodel.dat')
 
 def main():
 	if len(sys.argv) != 2:
