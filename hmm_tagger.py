@@ -54,6 +54,27 @@ def viterbi(matrix_a, matrix_b, obs):
 		s = num_to_token[state]
 		print(matrix_a['<START>'][s])
 		print(s)
+		print(obs[0])
+
+		if s in matrix_a['<START>']:
+			# Everything is good.
+			x
+		else:
+			# Havent seen that particular state after <START>.
+			x
+
+		if s in matrix_b:
+			if obs[0] in matrix_b[s]:
+				# Everything is good.
+				x
+			else:
+				# Havent seen that word with that state before.
+				x
+		else:
+			# Havent seen that particular state in training.
+			x
+
+
 
 		vit[state][0] = matrix_a['<START>'][s] * matrix_b[s][obs[0]]
 		backpointer[state][0] = 0
@@ -69,7 +90,7 @@ def viterbi(matrix_a, matrix_b, obs):
 					vit[state][t] = vtj
 					backpointer[state][t] = num_to_token[sprev]
 
-	# Find sequence of tags.
+	# Find sequence of tags via the backpointer matrix.
 
 	return None
 
@@ -79,8 +100,12 @@ def hmmTagger(f, std_in_raw):
 	std_input = ['<START>'] + std_in_raw.read().strip().split(' ') + ['<END>']
 
 	model = pickle.load(open(f, 'rb'))
-	matrix_a = model['a']
-	matrix_b = model['b']
+
+	try:
+		matrix_a = model['a']
+		matrix_b = model['b']
+	except:
+		printError()
 
 	result = ' '.join(viterbi(matrix_a, matrix_b, std_input))
 
