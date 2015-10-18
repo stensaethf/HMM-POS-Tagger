@@ -29,14 +29,14 @@ def viterbi(matrix_a, matrix_b, obs):
 	token_to_num['<START>'] = 0
 	num_to_token = []
 	num_to_token.append('<START>')
-	for token in enumerate(matrix_a):
-		if token not in ['<START>', '<END>']:
+	for token in matrix_a:
+		if token not in ['<START>', '<END>', 0]:
 			num_to_token.append(token)
 			token_to_num[token] = len(num_to_token) - 1
 	num_to_token.append('<END>')
 	token_to_num['<END>'] = len(num_to_token) - 1
 
-	n = len(matrix_a)
+	n = len(matrix_a) - 2 # Do not want to count <START> and <END>
 	T = len(obs)
 
 	# Setups the vit and backpoitner matrices that we will use for computing
@@ -52,6 +52,9 @@ def viterbi(matrix_a, matrix_b, obs):
 
 	for state in range(1, n):
 		s = num_to_token[state]
+		print(matrix_a['<START>'][s])
+		print(s)
+
 		vit[state][0] = matrix_a['<START>'][s] * matrix_b[s][obs[0]]
 		backpointer[state][0] = 0
 
@@ -61,8 +64,7 @@ def viterbi(matrix_a, matrix_b, obs):
 			s = num_to_token[state]
 			for sprev in range(1, n):
 				sp = num_to_token[sprev]
-				vtj = vit[sprev][t - 1] * matrix_a[sp][s] 
-										* matrix_b[s][obs[t]]
+				vtj = vit[sprev][t - 1] * matrix_a[sp][s] * matrix_b[s][obs[t]]
 				if vtj > vit[state][t]:
 					vit[state][t] = vtj
 					backpointer[state][t] = num_to_token[sprev]
@@ -74,7 +76,7 @@ def viterbi(matrix_a, matrix_b, obs):
 def hmmTagger(f, std_in_raw):
 	"""
 	"""
-	std_input = std_in_raw.read().strip().split(' ')
+	std_input = ['<START>'] + std_in_raw.read().strip().split(' ') + ['<END>']
 
 	model = pickle.load(open(f, 'rb'))
 	matrix_a = model['a']

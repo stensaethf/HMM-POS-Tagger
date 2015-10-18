@@ -26,7 +26,7 @@ def getTransitionCounts(sent_list):
 	model[0] = 0
 
 	for sent_raw in sent_list:
-		sent = sent_raw.split(' ')
+		sent = ['<START>/<START>'] + sent_raw.split(' ') + ['<END>/<END>']
 		for i, word_tag in enumerate(sent):
 			model[0] += 1
 
@@ -42,8 +42,8 @@ def getTransitionCounts(sent_list):
 					model[tag] = {}
 					model[tag][0] = 1
 
-				# Checks whether we are too close to the end of the sentence to
-				# create a bigram.
+				# Checks whether we are too close to the end of the sentence
+				# to check the next token.
 				if i + 1 < len(sent):
 					next_word_tag_split = sent[i + 1].split('/')
 
@@ -96,7 +96,7 @@ def getEmissionCounts(sent_list):
 	model[0] = 0
 
 	for sent_raw in sent_list:
-		sent = sent_raw.split(' ')
+		sent = ['<START>/<START>'] + sent_raw.split(' ') + ['<END>/<END>']
 		for i, word_tag in enumerate(sent):
 			word_tag_split = word_tag.split('/')
 
