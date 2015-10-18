@@ -20,24 +20,30 @@ def getTransitionCounts(sent_list):
 	for sent_raw in sent_list:
 		sent = sent_raw.split(' ')
 		for i, word_tag in enumerate(sent):
-			word = word_tag.split('/')[0]
-			tag = word_tag.split('/')[1]
+			word_tag_split = word_tag.split('/')
 
-			if tag in model:
-				model[tag][0] += 1
-			else:
-				model[tag] = {}
-				model[tag][0] = 1
+			if len(word_tag_split) == 2:
+				word = word_tag_split[0]
+				tag = word_tag_split[1]
 
-			# Checks whether we are too close to the end of the sentence to
-			# create a bigram.
-			if i + 1 < len(sent):
-				next_tag = sent[i + 1].split('/')[1]
-				if next_tag in model[tag]:
-					model[tag][next_tag][0] += 1
+				if tag in model:
+					model[tag][0] += 1
 				else:
-					model[tag][next_tag] = {}
-					model[tag][next_tag][0] = 1
+					model[tag] = {}
+					model[tag][0] = 1
+
+				# Checks whether we are too close to the end of the sentence to
+				# create a bigram.
+				if i + 1 < len(sent):
+					next_word_tag_split = sent[i + 1].split('/')
+
+					if len(next_word_tag_split) == 2:
+						next_tag = next_word_tag_split[1]
+						if next_tag in model[tag]:
+							model[tag][next_tag][0] += 1
+						else:
+							model[tag][next_tag] = {}
+							model[tag][next_tag][0] = 1
 
 	return model
 
@@ -50,12 +56,14 @@ def getTransitionProbabilities(transition_counts):
 	# Loops over and finds all the different bigrams. Calculates the
 	# probability of each and stores them in matrix_a.
 	for first in transition_counts:
-		for second in transition_counts[first]:
-			count_bi = transition_counts[first][second][0]
-			count_uni = transition_counts[first][0]
+		if first != 0:
+			for second in transition_counts[first]:
+				if second != 0:
+					count_bi = transition_counts[first][second][0]
+					count_uni = transition_counts[first][0]
 
-			matrix_a[first] = {}
-			matrix_a[first][second] = (count_bi / count_uni)
+					matrix_a[first] = {}
+					matrix_a[first][second] = (count_bi / count_uni)
 
 	return matrix_a
 
@@ -77,20 +85,24 @@ def getEmissionCounts(sent_list):
 	for sent_raw in sent_list:
 		sent = sent_raw.split(' ')
 		for i, word_tag in enumerate(sent):
-			word = word_tag.split('/')[0]
-			tag = word_tag.split('/')[1]
+			word_tag_split = word_tag.split('/')
 
-			if tag in model:
-				model[tag][0] += 1
-			else:
-				model[tag] = {}
-				model[tag][0] = 1
+			if len(word_tag_split) == 2:
 
-			if word in model[tag]:
-				model[tag][word][0] += 1
-			else:
-				model[tag][word] = {}
-				model[tag][word][0] = 1
+				word = word_tag_split[0]
+				tag = word_tag_split[1]
+
+				if tag in model:
+					model[tag][0] += 1
+				else:
+					model[tag] = {}
+					model[tag][0] = 1
+
+				if word in model[tag]:
+					model[tag][word][0] += 1
+				else:
+					model[tag][word] = {}
+					model[tag][word][0] = 1
 
 	return model
 
@@ -101,12 +113,14 @@ def getEmissionProbabilities(emission_counts):
 	matrix_b[0] = emission_counts[0]
 
 	for state in emission_counts:
-		for word in emission_counts[state]:
-			count_bi = emission_counts[state][word][0]
-			count_uni = emission_counts[state]
+		if state != 0:
+			for word in emission_counts[state]:
+				if word != 0:
+					count_bi = emission_counts[state][word][0]
+					count_uni = emission_counts[state][0]
 
-			matrix_b[state] = {}
-			matrix_b[state][word] = (count_bi / count_uni)
+					matrix_b[state] = {}
+					matrix_b[state][word] = (count_bi / count_uni)
 
 	return matrix_b
 
@@ -123,8 +137,13 @@ def getEmissionMatrix(sent_list):
 def hmmBuilder(f):
 	"""
 	"""
-	sent_list = f.split('./.')
-	matrix_a = getTansistionMatrix(sent_list)
+	data = ''
+	for line in f:
+		data += line
+
+	# Seperates the 
+	sent_list = data.split('./.')
+	matrix_a = getTransitionMatrix(sent_list)
 
 	matrix_b = getEmissionMatrix(sent_list)
 
