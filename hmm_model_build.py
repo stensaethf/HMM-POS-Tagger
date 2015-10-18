@@ -3,6 +3,7 @@
 
 import sys
 import pickle
+import re
 
 def printError():
 	"""
@@ -141,8 +142,14 @@ def hmmBuilder(f):
 	for line in f:
 		data += line
 
-	# Seperates the 
+	# Seperates the data into sentences.
 	sent_list = data.split('./.')
+	for i, sent in enumerate(sent_list):
+		sent = re.sub('\n', '', sent)
+		sent_list[i] = sent.strip() + ' ./.'
+		print(sent)
+	print(sent_list)
+
 	matrix_a = getTransitionMatrix(sent_list)
 
 	matrix_b = getEmissionMatrix(sent_list)
