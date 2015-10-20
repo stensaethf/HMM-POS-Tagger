@@ -11,6 +11,7 @@ of words/tokens.
 import sys
 import pickle
 import os.path
+import math
 
 def printError():
 	"""
@@ -42,9 +43,9 @@ def viterbi(matrix_a, matrix_b, obs):
 	# Setups the vit and backpoitner matrices that we will use for computing
 	# the most probable tag sequence and for keeping track of what tags that
 	# tag sequence actually consists of.
-	# [[0 for i in range(column)] for j in range(row)] 
-	vit = [[0 for i in range(T)] for j in range(n + 2)]
-	backpointer = [[0 for i in range(T)] for j in range(n + 2)]
+	# [[0 for i in range(column)] for j in range(row)]
+	vit = [[1 for i in range(T)] for j in range(n + 2)]
+	backpointer = [[1 for i in range(T)] for j in range(n + 2)]
 
 	# NOTE:
 	# From here on we need to be defensive. The words may not have been seen
@@ -52,32 +53,36 @@ def viterbi(matrix_a, matrix_b, obs):
 
 	for state in range(1, n):
 		s = num_to_token[state]
-		print(matrix_a['<START>'][s])
+		# print(matrix_a['<START>'][s])
 		print(s)
 		print(obs[0])
 
 		if s in matrix_a['<START>']:
 			# Everything is good.
-			x
+			transition = matrix_a['<START>'][s]
 		else:
 			# Havent seen that particular state after <START>.
-			x
+			transition = 1 # gt
 
 		if s in matrix_b:
 			if obs[0] in matrix_b[s]:
 				# Everything is good.
-				x
+				emission = matrix_b[s][obs[0]]
 			else:
 				# Havent seen that word with that state before.
-				x
+				emission = 1
 		else:
 			# Havent seen that particular state in training.
-			x
+			emission = 1
 
 
 
-		vit[state][0] = matrix_a['<START>'][s] * matrix_b[s][obs[0]]
+		vit[state][0] = math.log(transition) + math.log(emission)
 		backpointer[state][0] = 0
+
+	print(backpointer)
+	print()
+	print(vit)
 
 	for t in range(2, T):
 		for state in range(1, n):
@@ -85,14 +90,42 @@ def viterbi(matrix_a, matrix_b, obs):
 			s = num_to_token[state]
 			for sprev in range(1, n):
 				sp = num_to_token[sprev]
-				vtj = vit[sprev][t - 1] * matrix_a[sp][s] * matrix_b[s][obs[t]]
+
+				if sp in matrix_a:
+					if s in matrix_a[sp]:
+						# everything is good.
+						transition = matrix_a[sp][s]
+					else:
+						# havent seen that state after sp.
+						transition = 1 # gt
+				else:
+					# havent seen that state.
+					transition = 1
+
+				if s in matrix_b:
+					if obs[t] in matrix_b[s]:
+						# everything is good
+						emission = matrix_b[s][obs[t]]
+					else:
+						# havent seen that combination.
+						emission = 1
+				else:
+					# havent seen that state.
+					emission = 1
+
+				vtj = vit[sprev][t - 1] + math.log(transition) + math.log(emission)
 				if vtj > vit[state][t]:
 					vit[state][t] = vtj
 					backpointer[state][t] = num_to_token[sprev]
 
 	# Find sequence of tags via the backpointer matrix.
 
-	return None
+	# print(backpointer)
+	# print()
+	# print(vit)
+
+
+	return []
 
 def hmmTagger(f, std_in_raw):
 	"""
