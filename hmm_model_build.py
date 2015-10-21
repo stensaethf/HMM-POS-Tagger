@@ -14,6 +14,7 @@ import re
 
 def printError():
 	"""
+	WORKS
 	"""
 	print('Error.')
 	print('Usage: $ python3 hmm_model_build.py <file for building>')
@@ -21,9 +22,13 @@ def printError():
 
 def getTransitionCounts(sent_list):
 	"""
+	SHOULD WORK
 	"""
 	model = {}
 	model[0] = 0
+	###
+	model['<SEEN>'] = 0
+	###
 
 	for sent_raw in sent_list:
 		sent = ['<START>/<START>'] + sent_raw.split(' ') + ['<END>/<END>']
@@ -52,6 +57,9 @@ def getTransitionCounts(sent_list):
 						if next_tag in model[tag]:
 							model[tag][next_tag][0] += 1
 						else:
+							###
+							model['<SEEN>'] += 1
+							###
 							model[tag][next_tag] = {}
 							model[tag][next_tag][0] = 1
 
@@ -59,6 +67,7 @@ def getTransitionCounts(sent_list):
 
 def getTransitionProbabilities(transition_counts):
 	"""
+	SHOULD WORK -- smoothing?
 	"""
 	matrix_a = {}
 	matrix_a[0] = transition_counts[0]
@@ -78,10 +87,17 @@ def getTransitionProbabilities(transition_counts):
 						matrix_a[first] = {}
 						matrix_a[first][second] = (count_bi / count_uni)
 
+	###
+	possible = len(model) ** 2
+	not_seen = (possible - seen) / possible
+	matrix_a['<NOT_SEEN_P>'] = not_seen
+	###
+
 	return matrix_a
 
 def getTransitionMatrix(sent_list):
 	"""
+	SHOULD WORK
 	"""
 	transition_counts = getTransitionCounts(sent_list)
 
@@ -91,6 +107,7 @@ def getTransitionMatrix(sent_list):
 
 def getEmissionCounts(sent_list):
 	"""
+	SHOULD WORK
 	"""
 	model = {}
 	model[0] = 0
@@ -121,6 +138,7 @@ def getEmissionCounts(sent_list):
 
 def getEmissionProbabilities(emission_counts):
 	"""
+	SHOULD WORK -- smoothing?
 	"""
 	matrix_b = {}
 	matrix_b[0] = emission_counts[0]
@@ -142,6 +160,7 @@ def getEmissionProbabilities(emission_counts):
 
 def getEmissionMatrix(sent_list):
 	"""
+	SHOULD WORK
 	b_i(O_t) = P(O_t | q_i)
 	"""
 	emission_counts = getEmissionCounts(sent_list)
@@ -152,6 +171,7 @@ def getEmissionMatrix(sent_list):
 
 def hmmBuilder(f):
 	"""
+	SHOULD WORK
 	"""
 	print('Calculating HMM probabilities...')
 

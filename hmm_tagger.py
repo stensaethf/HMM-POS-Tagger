@@ -15,6 +15,7 @@ import math
 
 def printError():
 	"""
+	WORKS
 	"""
 	print('Error.')
 	print('Usage: $ echo <string to be tagged> | python hmm_tagger.py',
@@ -23,6 +24,7 @@ def printError():
 
 def viterbi(matrix_a, matrix_b, obs):
 	"""
+	DOESNT WORK
 	"""
 	# Create data structures for going back and forth between tokens in string
 	# form and integer form.
@@ -129,6 +131,7 @@ def viterbi(matrix_a, matrix_b, obs):
 
 def hmmTagger(f, std_in_raw):
 	"""
+	DOESNT WORK
 	"""
 	std_input = ['<START>'] + std_in_raw.read().strip().split(' ') + ['<END>']
 
