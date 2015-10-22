@@ -101,7 +101,7 @@ def backward_alg(matrix_a, matrix_b, obs):
 	for j in range(1, N + 1):
 		transition = matrix_a['<START>'][num_to_token[j]]
 		emission = matrix_b[num_to_token[j]][obs[0]]
-		backward = beta[1][j]
+		backward = beta[0][j]
 
 		result += math.log(transition) + \
 				  math.log(emission) + \
@@ -111,6 +111,7 @@ def backward_alg(matrix_a, matrix_b, obs):
 
 def recursion_backward(matrix_a, matrix_b, obs, num_to_token, beta):
 	"""
+	DOESNT WORK
 	"""
 	N = len(matrix_a) - 2
 	T = len(obs)
@@ -133,6 +134,7 @@ def recursion_backward(matrix_a, matrix_b, obs, num_to_token, beta):
 
 def init_backward(matrix_a, matrix_b, obs, num_to_token):
 	"""
+	DOESNT WORK
 	"""
 	N = len(matrix_a) - 2
 	T = len(obs)
@@ -143,6 +145,14 @@ def init_backward(matrix_a, matrix_b, obs, num_to_token):
 		beta[T - 1][j] = math.log(matrix_a[num_to_token[i]]['<END>'])
 
 	return beta
+
+def forward-backward():
+	"""
+	DOESNT WORK
+	"""
+	Xx
+
+	return None, None
 
 def main():
 	print()
