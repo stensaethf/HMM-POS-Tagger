@@ -35,6 +35,7 @@ def forward_alg(matrix_a, matrix_b, obs):
 
 def recursion_forward(matrix_a, matrix_b, obs, num_to_token, alpha):
 	"""
+	DOESNT WORK
 	"""
 	N = len(matrix_a) - 2
 	T = len(obs)
