@@ -99,9 +99,9 @@ def backward_alg(matrix_a, matrix_b, obs):
 	# termination
 	result = 0
 	for j in range(1, N + 1):
-		transition = matrix_a[][]
-		emission = matrix_b[][]
-		backward = beta[][]
+		transition = matrix_a['<START>'][num_to_token[j]]
+		emission = matrix_b[num_to_token[j]][obs[0]]
+		backward = beta[1][j]
 
 		result += math.log(transition) + \
 				  math.log(emission) + \
