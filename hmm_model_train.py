@@ -150,12 +150,32 @@ def forward-backward():
 	"""
 	DOESNT WORK
 	"""
+	print('Training HMM matrices A and B...')
+
+	# initialize A, B
+	matrix_a = {}
+	matrix_b = {}
 	Xx
 
-	return None, None
+	# iterate until convergence
+		# E-step
+		Xx
+
+		# M-step
+		Xx
+
+	model = {}
+	model['a'] = matrix_a
+	model['b'] = matrix_b
+
+	pickle.dump(model, open('trainmodel.dat', 'wb'))
+	print('Saving to trainmodel.dat')
+
+	return A, B
 
 def main():
 	print()
+	# forward-backward()
 
 
 if __name__ == '__main__':
