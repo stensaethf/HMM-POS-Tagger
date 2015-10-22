@@ -75,9 +75,10 @@ def getTransitionProbabilities(transition_counts):
 	# Loops over and finds all the different bigrams. Calculates the
 	# probability of each and stores them in matrix_a.
 	for first in transition_counts:
-		if first != 0:
+		if first != 0 and first != '<SEEN>':
+			print(transition_counts[first])
 			for second in transition_counts[first]:
-				if second != 0:
+				if second != 0 and second != '<SEEN>':
 					count_bi = transition_counts[first][second][0]
 					count_uni = transition_counts[first][0]
 
@@ -88,8 +89,8 @@ def getTransitionProbabilities(transition_counts):
 						matrix_a[first][second] = (count_bi / count_uni)
 
 	###
-	possible = len(model) ** 2
-	not_seen = (possible - seen) / possible
+	possible = len(matrix_a) ** 2
+	not_seen = (possible - transition_counts['<SEEN>']) / possible
 	matrix_a['<NOT_SEEN_P>'] = not_seen
 	###
 
