@@ -18,7 +18,7 @@ def printError():
 	WORKS
 	"""
 	print('Error.')
-	print('Usage: $ echo <string to be tagged> | python hmm_tagger.py',
+	print('Usage: $ echo <string to be tagged> | python3 hmm_tagger.py',
 	      '[countmodel.dat | trainmodel.dat]')
 	sys.exit()
 
@@ -36,7 +36,7 @@ def viterbi(matrix_a, matrix_b, obs):
 			# print(token)
 			num_to_token.append(token)
 	num_to_token.append('<END>')
-
+	print(num_to_token)
 	# print(num_to_token)
 
 	N = len(num_to_token) - 2 # Do not want to count <START> and <END>

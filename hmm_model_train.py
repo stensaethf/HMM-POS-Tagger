@@ -1,6 +1,17 @@
 '''
 '''
 
+import pickle
+import sys
+
+def printError():
+	"""
+	WORKS
+	"""
+	print('Error.')
+	print('Usage: $ python3 hmm_model_train.py <input file>')
+	sys.exit()
+
 def forward_alg(matrix_a, matrix_b, obs):
 	"""
 	DOESNT WORK
@@ -146,23 +157,39 @@ def init_backward(matrix_a, matrix_b, obs, num_to_token):
 
 	return beta
 
-def forward-backward():
+def forwardBackward(states):
 	"""
 	DOESNT WORK
 	"""
-	print('Training HMM matrices A and B...')
-
 	# initialize A, B
 	matrix_a = {}
 	matrix_b = {}
-	Xx
+	for i in states:
+		matrix_a[i] = {}
+		matrix_b[i] = {}
+		for j in states:
+			matrix_a[i][j] = Xx # enter prob here XX
 
 	# iterate until convergence
+	for i in range(1000): # change this to check convergence later on XX
 		# E-step
 		Xx
 
 		# M-step
 		Xx
+
+	return A, B
+
+def hmmTrainer(f):
+	"""
+	DOESNT WORK
+	"""
+	print('Training HMM matrices A and B...')
+
+	states = ['<START>', 'DET', '.', 'ADJ', 'PRT', 'VERB', 'NUM', 'X', \
+			  'CONJ', 'PRON', 'ADV', 'ADP', 'NOUN', '<END>']
+
+	matrix_a, matrix_b = forwardBackward(states)
 
 	model = {}
 	model['a'] = matrix_a
@@ -171,10 +198,16 @@ def forward-backward():
 	pickle.dump(model, open('trainmodel.dat', 'wb'))
 	print('Saving to trainmodel.dat')
 
-	return A, B
-
 def main():
-	print()
+	if len(sys.argv) != 2:
+		printError()
+
+	try:
+		f = open(sys.argv[1])
+	except:
+		printError()
+
+	hmmTrainer(f)
 	# forward-backward()
 
 
