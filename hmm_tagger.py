@@ -22,32 +22,6 @@ def printError():
 	      '[countmodel.dat | trainmodel.dat]')
 	sys.exit()
 
-# def viterbiNEW(matrix_a, matrix_b, obs):
-# 	"""
-# 	DOESNT WORK
-# 	"""
-# 	num_to_token = ['<START>']
-# 	for token in matrix_a:
-# 		if token not in ['<START>', '<END>', 0]:
-# 			num_to_token.append(token)
-# 	num_to_token.append('<END>')
-
-# 	N = len(matrix_a)
-# 	T = len(obs)
-
-# 	vit = [[1 for i in range(T)] for j in range(N + 2)]
-# 	backpointer = [[1 for i in range(T)] for j in range(N + 2)]
-
-# 	for s in range(1, N):
-# 		vit[s][1] = matrix_a[0][s] * matrix_b[s][obs[1]]
-# 		backpointer[s][1] = 0
-
-# 	for t in range(2, T):
-# 		for s in range(1, N):
-# 			vit[][]
-
-# 	return None
-
 def viterbi(matrix_a, matrix_b, obs):
 	"""
 	DOESNT WORK
@@ -59,11 +33,11 @@ def viterbi(matrix_a, matrix_b, obs):
 	for token in matrix_a:
 		# print(token)
 		if token not in ['<START>', '<END>', 0, '<SEEN>', '<NOT_SEEN_P>']:
-			print(token)
+			# print(token)
 			num_to_token.append(token)
 	num_to_token.append('<END>')
 
-	print(num_to_token)
+	# print(num_to_token)
 
 	N = len(num_to_token) - 2 # Do not want to count <START> and <END>
 	T = len(obs)
@@ -82,7 +56,7 @@ def viterbi(matrix_a, matrix_b, obs):
 	# initialization
 	for state in range(1, N + 1):
 		s = num_to_token[state]
-		print(s)
+		# print(s)
 		# print(matrix_a['<START>'][s])
 		# print(s)
 		# print(obs[0])
@@ -112,7 +86,7 @@ def viterbi(matrix_a, matrix_b, obs):
 
 	# print(backpointer)
 	# print()
-	print(vit)
+	# print(vit)
 
 	####
 	# WORKS TILL HERE
@@ -122,9 +96,9 @@ def viterbi(matrix_a, matrix_b, obs):
 	for t in range(1, T):
 		for state in range(1, N + 1):
 			vit[state][t] = float('-inf')
-			print()
-			print(vit)
-			print()
+			# print()
+			# print(vit)
+			# print()
 
 			s = num_to_token[state]
 			for sprev in range(1, N + 1):
@@ -152,16 +126,16 @@ def viterbi(matrix_a, matrix_b, obs):
 					emission = 0.00001
 
 				vtj = vit[sprev][t - 1] + math.log(transition) + math.log(emission)
-				print(vtj)
-				print(vit[state][t])
+				# print(vtj)
+				# print(vit[state][t])
 				if vtj > vit[state][t]:
 					vit[state][t] = vtj
 					backpointer[state][t] = num_to_token[sprev]
-	print(vit)
-	print(len(vit))
-	print(len(vit[0]))
+	# print(vit)
+	# print(len(vit))
+	# print(len(vit[0]))
 	# sys.exit()
-	print(backpointer)
+	# print(backpointer)
 	# sys.exit()
 
 	####
@@ -206,10 +180,10 @@ def viterbi(matrix_a, matrix_b, obs):
 			maximum = temp
 			final_state = s
 
-	print(maximum)
-	print(s)
-	print(backpointer[num_to_token.index(s)][T - 1])
-	print(backpointer[num_to_token.index(backpointer[num_to_token.index(s)][T - 1])][T - 1])
+	# print(maximum)
+	# print(s)
+	# print(backpointer[num_to_token.index(s)][T - 1])
+	# print(backpointer[num_to_token.index(backpointer[num_to_token.index(s)][T - 1])][T - 1])
 	# sys.exit()
 
 	# Find sequence of tags via the backpointer matrix.
@@ -218,7 +192,7 @@ def viterbi(matrix_a, matrix_b, obs):
 	# print(vit)
 	# print()
 	# print(backpointer)
-	print('BACKTRACE')
+	# print('BACKTRACE')
 
 	# Trace our steps backwards in time to find the complete tag sequence.
 	final = final_state
@@ -226,7 +200,7 @@ def viterbi(matrix_a, matrix_b, obs):
 	# print(final)
 	for t in range(T - 1, 0, -1):
 		# print(t)
-		print(final)
+		# print(final)
 		index = num_to_token.index(final)
 		# print(index)
 		# print(backpointer[index][t])
@@ -239,7 +213,7 @@ def viterbi(matrix_a, matrix_b, obs):
 	result = []
 	for i, word in enumerate(obs):
 		result.append(word + '/' + backtrace[i])
-	print(result)
+	# print(result)
 
 	return result
 
@@ -262,7 +236,9 @@ def hmmTagger(f, std_in_raw):
 
 	result = ' '.join(viterbi(matrix_a, matrix_b, std_input))
 
-	print(result)
+	# print(result)
+	# send/ print to standard output.
+	sys.stdout.write(result)
 
 def main():
 	if len(sys.argv) != 2:
