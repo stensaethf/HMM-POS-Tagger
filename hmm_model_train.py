@@ -170,6 +170,9 @@ def forwardBackward(states, sent_list, Xx):
 	for repeat in range(1000): # change this to check convergence later on XX
 		sentence = sent_list[0] # XXXXXXXXXXX
 
+		N = len(states) - 2
+		T = len(sentence)
+
 		alpha, final_alpha = forwardAlg(matrix_a, matrix_b, sentence, states) # XX
 		beta, final_beta = backwardAlg(matrix_a, matrix_b, sentence, states) # XX
 
@@ -178,19 +181,18 @@ def forwardBackward(states, sent_list, Xx):
 		for t in range(0, T):
 			gamma[t] = {}
 			for j in range(0, N + 1):
-				gamma[t][j] = (alpa[t][j] * beta[t][j]) / \
-							   final_alpha]
+				gamma[t][j] = (alpha[t][j] * beta[t][j]) / final_alpha
 
 		xi = {}
-		for t in range(0, T):
+		for t in range(0, T - 1): # should this be 'T - 1'? XX
 			xi[t] = {}
 			for i in range(0, N + 1):
 				xi[t][i] = {}
 				for j in range(0, N + 1):
-					xi[t][i][j] = alpha[t][i] * \
-								  matrix_a[states[i]][states[j]] * \
-								  matrix_b[states[j]][sentence[t + 1]] * \
-								  beta[t + 1][j]
+					xi[t][i][j] = alpha[t][i] + \
+								  math.log(matrix_a[states[i]][states[j]]) + \
+								  math.log(matrix_b[states[j]][sentence[t + 1]]) + \
+								  beta[t + 1][j] # what do we do here when T for beta and alpha? XX
 
 		# Setup a_hat and b_hat
 		a_hat = {}
@@ -218,7 +220,7 @@ def forwardBackward(states, sent_list, Xx):
 					for k in range(0, N + 1):
 						a_denom_sum += xi[t][i][k]
 
-				a_hat[states[i]][states[j]] = math.log(a_num_sum) - math.log(a_denom_sum)
+				a_hat[states[i]][states[j]] = a_num_sum / a_denom_sum
 
 		for j in range(0, N + 1): # XX
 			for v_k in b_hat[states[j]]: # XX
@@ -232,7 +234,7 @@ def forwardBackward(states, sent_list, Xx):
 					for t in range(0, T):
 						b_denom_sum += gamma[t][j]
 
-					b_hat[states[j]][v_k] = math.log(b_num_sum) - math.log(b_denom_sum)
+					b_hat[states[j]][v_k] = b_num_sum / b_denom_sum
 
 		Xx
 
@@ -249,7 +251,7 @@ def hmmTrainer(f):
 
 	sent_list = []
 	for line in f:
-		sent_list.append(line) # lower case? XX
+		sent_list.append(line.lower()) # lower case? XX
 
 	matrix_a, matrix_b = forwardBackward(states, sent_list, Xx)
 
