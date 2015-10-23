@@ -38,7 +38,7 @@ def getTransitionCounts(sent_list):
 			word_tag_split = word_tag.split('/')
 
 			if len(word_tag_split) == 2:
-				word = word_tag_split[0]
+				word = word_tag_split[0].lower()
 				tag = word_tag_split[1]
 
 				if tag in model:
@@ -76,7 +76,7 @@ def getTransitionProbabilities(transition_counts):
 	# probability of each and stores them in matrix_a.
 	for first in transition_counts:
 		if first != 0 and first != '<SEEN>':
-			print(transition_counts[first])
+			# print(transition_counts[first])
 			for second in transition_counts[first]:
 				if second != 0 and second != '<SEEN>':
 					count_bi = transition_counts[first][second][0]
@@ -120,7 +120,7 @@ def getEmissionCounts(sent_list):
 
 			if len(word_tag_split) == 2:
 
-				word = word_tag_split[0]
+				word = word_tag_split[0].lower()
 				tag = word_tag_split[1]
 
 				if tag in model:

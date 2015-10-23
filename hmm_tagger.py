@@ -36,7 +36,7 @@ def viterbi(matrix_a, matrix_b, obs):
 			# print(token)
 			num_to_token.append(token)
 	num_to_token.append('<END>')
-	print(num_to_token)
+	# print(num_to_token)
 	# print(num_to_token)
 
 	N = len(num_to_token) - 2 # Do not want to count <START> and <END>
@@ -69,9 +69,9 @@ def viterbi(matrix_a, matrix_b, obs):
 			transition = 0.00001 # gt
 
 		if s in matrix_b:
-			if obs[0] in matrix_b[s]:
+			if obs[0].lower() in matrix_b[s]:
 				# Everything is good.
-				emission = matrix_b[s][obs[0]]
+				emission = matrix_b[s][obs[0].lower()]
 			else:
 				# Havent seen that word with that state before.
 				emission = 0.00001
@@ -115,9 +115,9 @@ def viterbi(matrix_a, matrix_b, obs):
 					transition = 0.00001
 
 				if s in matrix_b:
-					if obs[t] in matrix_b[s]:
+					if obs[t].lower() in matrix_b[s]:
 						# everything is good
-						emission = matrix_b[s][obs[t]]
+						emission = matrix_b[s][obs[t].lower()]
 					else:
 						# havent seen that combination.
 						emission = 0.00001
@@ -221,10 +221,7 @@ def hmmTagger(f, std_in_raw):
 	"""
 	DOESNT WORK
 	"""
-	# might need to remove the stat and end from here.
 	std_input = std_in_raw.read().strip().split(' ')
-
-	# print(f)
 
 	model = pickle.load(open(f, 'rb'))
 

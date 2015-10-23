@@ -12,26 +12,15 @@ def printError():
 	print('Usage: $ python3 hmm_model_train.py <input file>')
 	sys.exit()
 
-def forward_alg(matrix_a, matrix_b, obs, num_to_token):
+def forwardAlg(matrix_a, matrix_b, obs, num_to_token):
 	"""
-	DOESNT WORK
+	SHOULD WORK
 	"""
-	# Create data structures for going back and forth between tokens in string
-	# form and integer form.
-	# num_to_token = []
-	# num_to_token.append('<START>')
-	# for token in matrix_a:
-	# 	# print(token)
-	# 	if token not in ['<START>', '<END>', 0, '<SEEN>', '<NOT_SEEN_P>']:
-	# 		# print(token)
-	# 		num_to_token.append(token)
-	# num_to_token.append('<END>')
-
 	# init
-	alpha = init_forward(matrix_a, matrix_b, obs, num_to_token)
+	alpha = initForward(matrix_a, matrix_b, obs, num_to_token)
 
 	# recursion
-	alpha = recursion_forward(matrix_a, matrix_b, obs, num_to_token, alpha)
+	alpha = recursionForward(matrix_a, matrix_b, obs, num_to_token, alpha)
 
 	# termination
 	result = 0
@@ -44,9 +33,9 @@ def forward_alg(matrix_a, matrix_b, obs, num_to_token):
 
 	return result, alpha
 
-def recursion_forward(matrix_a, matrix_b, obs, num_to_token, alpha):
+def recursionForward(matrix_a, matrix_b, obs, num_to_token, alpha):
 	"""
-	DOESNT WORK
+	SHOULD WORK
 	"""
 	N = len(matrix_a) - 2
 	T = len(obs)
@@ -68,9 +57,9 @@ def recursion_forward(matrix_a, matrix_b, obs, num_to_token, alpha):
 
 	return alpha
 
-def init_forward(matrix_a, matrix_b, obs, num_to_token):
+def initForward(matrix_a, matrix_b, obs, num_to_token):
 	"""
-	DOESNT WORK
+	SHOULD WORK
 	"""
 	N = len(matrix_a) - 2
 	T = len(obs)
@@ -82,30 +71,19 @@ def init_forward(matrix_a, matrix_b, obs, num_to_token):
 		transition = matrix_a['<START>'][num_to_token[j]]
 		emission = matrix_b[num_to_token[j]][obs[0]]
 
-		alpha[1][j] = math.log(transition) + math.log(emission)
+		alpha[0][j] = math.log(transition) + math.log(emission)
 
 	return alpha
 
-def backward_alg(matrix_a, matrix_b, obs, num_to_token):
+def backwardAlg(matrix_a, matrix_b, obs, num_to_token):
 	"""
-	DOESNT WORK
+	SHOULD WORK
 	"""
-	# Create data structures for going back and forth between tokens in string
-	# form and integer form.
-	# num_to_token = []
-	# num_to_token.append('<START>')
-	# for token in matrix_a:
-	# 	# print(token)
-	# 	if token not in ['<START>', '<END>', 0, '<SEEN>', '<NOT_SEEN_P>']:
-	# 		# print(token)
-	# 		num_to_token.append(token)
-	# num_to_token.append('<END>')
-
 	# init
-	beta = init_backward(matrix_a, matrix_b, obs, num_to_token)
+	beta = initBackward(matrix_a, matrix_b, obs, num_to_token)
 
 	# recursion
-	beta = recursion_backward(matrix_a, matrix_b, obs, num_to_token, beta)
+	beta = recursionBackward(matrix_a, matrix_b, obs, num_to_token, beta)
 
 	# termination
 	result = 0
@@ -120,14 +98,14 @@ def backward_alg(matrix_a, matrix_b, obs, num_to_token):
 
 	return result, beta
 
-def recursion_backward(matrix_a, matrix_b, obs, num_to_token, beta):
+def recursionBackward(matrix_a, matrix_b, obs, num_to_token, beta):
 	"""
-	DOESNT WORK
+	SHOULD WORK
 	"""
 	N = len(matrix_a) - 2
 	T = len(obs)
 
-	for t in range(T - 1, -1, -1): # not sure about this
+	for t in range(T - 2, -1, -1): # not sure about this
 		for i in range(1, N + 1):
 			sigma = 0
 			for j in range(1, N + 1):
@@ -143,9 +121,9 @@ def recursion_backward(matrix_a, matrix_b, obs, num_to_token, beta):
 
 	return beta
 
-def init_backward(matrix_a, matrix_b, obs, num_to_token):
+def initBackward(matrix_a, matrix_b, obs, num_to_token):
 	"""
-	DOESNT WORK
+	SHOULD WORK
 	"""
 	N = len(matrix_a) - 2
 	T = len(obs)
@@ -153,7 +131,7 @@ def init_backward(matrix_a, matrix_b, obs, num_to_token):
 	beta = [[1 for i in range(N + 2)] for j in range(T)]
 
 	for j in range(1, N + 1):
-		beta[T - 1][j] = math.log(matrix_a[num_to_token[i]]['<END>'])
+		beta[T - 1][j] = math.log(matrix_a[num_to_token[j]]['<END>'])
 
 	return beta
 
@@ -164,7 +142,6 @@ def forwardBackward(states, sent_list, Xx):
 	# initialize A, B
 	matrix_a = {}
 	matrix_b = {}
-	possible = len(states) ** 2
 
 	words_dict = {}
 	for line in sent_list:
@@ -191,12 +168,43 @@ def forwardBackward(states, sent_list, Xx):
 
 	# iterate until convergence
 	for repeat in range(1000): # change this to check convergence later on XX
-		# E-step
-		gamma = Xx
-		xi = Xx
+		sentence = sent_list[0] # XXXXXXXXXXX
 
-		a_hat = Xx
-		b_hat = Xx
+		alpha, final_alpha = forwardAlg(matrix_a, matrix_b, sentence, states) # XX
+		beta, final_beta = backwardAlg(matrix_a, matrix_b, sentence, states) # XX
+
+		# E-step
+		gamma = {}
+		for t in range(0, T):
+			gamma[t] = {}
+			for j in range(0, N + 1):
+				gamma[t][j] = (alpa[t][j] * beta[t][j]) / \
+							   alpha[T - 1][states.index('<END>')]
+
+		xi = {}
+		for t in range(0, T):
+			xi[t] = {}
+			for i in range(0, N + 1):
+				xi[t][i] = {}
+				for j in range(0, N + 1):
+					xi[t][i][j] = alpha[t][i] * \
+								  matrix_a[states[i]][states[j]] * \
+								  matrix_b[states[j]][sentence[t + 1]] * \
+								  beta[t + 1][j]
+
+		# Setup a_hat and b_hat
+		a_hat = {}
+		b_hat = {}
+		for state in states:
+			a_hat[state] = {}
+			b_hat[state] = {}
+
+			for s in states:
+				a_hat[state][s] = False
+
+			for sent in sent_list:
+				for word in sent.split(' '):
+					b_hat[state][word] = False
 
 		# M-step
 		for i in range(0, N + 1):
@@ -205,13 +213,15 @@ def forwardBackward(states, sent_list, Xx):
 				for t in range(0, T - 1):
 					a_num_sum += xi[t][i][j]
 
-			a_denom_sum = 0
-			for t in range(0, T - 1):
-				for k in range(0, N + 1):
-					a_denom_sum += xi[t][i][k]
+				a_denom_sum = 0
+				for t in range(0, T - 1):
+					for k in range(0, N + 1):
+						a_denom_sum += xi[t][i][k]
+
+				a_hat[states[i]][states[j]] = math.log(a_num_sum) - math.log(a_denom_sum)
 
 		for j in range(0, N + 1): # XX
-			for v_k in b_hat[states.index(j)]: # XX
+			for v_k in b_hat[states[j]]: # XX
 				for w in sentence: # XX
 					b_num_sum = 0
 					for t in range(0, T):
@@ -222,7 +232,7 @@ def forwardBackward(states, sent_list, Xx):
 					for t in range(0, T):
 						b_denom_sum += gamma[t][j]
 
-					b_hat[states.index(j)][v_k] = math.log(b_num_sum) - math.log(b_denom_sum)
+					b_hat[states[j]][v_k] = math.log(b_num_sum) - math.log(b_denom_sum)
 
 		Xx
 
@@ -237,11 +247,9 @@ def hmmTrainer(f):
 	states = ['<START>', 'DET', '.', 'ADJ', 'PRT', 'VERB', 'NUM', 'X', \
 			  'CONJ', 'PRON', 'ADV', 'ADP', 'NOUN', '<END>']
 
-	Xx
-
 	sent_list = []
 	for line in f:
-		sent_list.append(line)
+		sent_list.append(line) # lower case? XX
 
 	matrix_a, matrix_b = forwardBackward(states, sent_list, Xx)
 
