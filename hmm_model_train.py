@@ -184,15 +184,19 @@ def forwardBackward(states, sent_list, Xx):
 				gamma[t][j] = (alpha[t][j] * beta[t][j]) / final_alpha
 
 		xi = {}
-		for t in range(0, T - 1): # should this be 'T - 1'? XX
+		for t in range(0, T): # should this be 'T - 1'? XX
 			xi[t] = {}
 			for i in range(0, N + 1):
 				xi[t][i] = {}
 				for j in range(0, N + 1):
-					xi[t][i][j] = alpha[t][i] + \
-								  math.log(matrix_a[states[i]][states[j]]) + \
-								  math.log(matrix_b[states[j]][sentence[t + 1]]) + \
-								  beta[t + 1][j] # what do we do here when T for beta and alpha? XX
+					if t == (T - 1):
+						# last word in the sentence.
+						xi[t][i][j] = alpha[t][i] + math.log(matrix_a[states[i]]['<END>'])
+					else:
+						xi[t][i][j] = alpha[t][i] + \
+									  math.log(matrix_a[states[i]][states[j]]) + \
+									  math.log(matrix_b[states[j]][sentence[t + 1]]) + \
+									  beta[t + 1][j] # what do we do here when T for beta and alpha? XX
 
 		# Setup a_hat and b_hat
 		a_hat = {}
