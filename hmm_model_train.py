@@ -157,18 +157,27 @@ def init_backward(matrix_a, matrix_b, obs, num_to_token):
 
 	return beta
 
-def forwardBackward(states):
+def forwardBackward(states, sent_list, Xx):
 	"""
 	DOESNT WORK
 	"""
 	# initialize A, B
 	matrix_a = {}
 	matrix_b = {}
+	possible = len(states) ** 2
 	for i in states:
 		matrix_a[i] = {}
 		matrix_b[i] = {}
 		for j in states:
-			matrix_a[i][j] = Xx # enter prob here XX
+			matrix_a[i][j] = 1 / possible # enter prob here XX
+
+		for line in sent_list:
+			for word in line.split(' '):
+				word = word.split('/')[0]
+				tag = word.split('/')[1]
+
+				if word not in matrix_b[i]:
+					matrix_b[i][word] = Xx # what prob to enter here? XX
 
 	# iterate until convergence
 	for i in range(1000): # change this to check convergence later on XX
@@ -189,7 +198,13 @@ def hmmTrainer(f):
 	states = ['<START>', 'DET', '.', 'ADJ', 'PRT', 'VERB', 'NUM', 'X', \
 			  'CONJ', 'PRON', 'ADV', 'ADP', 'NOUN', '<END>']
 
-	matrix_a, matrix_b = forwardBackward(states)
+	Xx
+
+	sent_list = []
+	for line in f:
+		sent_list.append(line)
+
+	matrix_a, matrix_b = forwardBackward(states, sent_list, Xx)
 
 	model = {}
 	model['a'] = matrix_a

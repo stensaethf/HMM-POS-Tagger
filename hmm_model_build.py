@@ -176,15 +176,18 @@ def hmmBuilder(f):
 	"""
 	print('Calculating HMM probabilities...')
 
-	data = ''
+	# data = ''
+	data = []
 	for line in f:
-		data += line
+		# data += line
+		data.append(line)
 
 	# Seperates the data into sentences.
-	sent_list = data.split('./.')
+	# sent_list = data.split('./.')
+	sent_list = data
 	for i, sent in enumerate(sent_list):
 		sent = re.sub('\n', ' ', sent)
-		sent_list[i] = sent.strip() + ' ./.'
+		sent_list[i] = sent.strip() #+ ' ./.'
 		# print(sent)
 	# print(sent_list)
 
