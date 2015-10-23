@@ -12,20 +12,20 @@ def printError():
 	print('Usage: $ python3 hmm_model_train.py <input file>')
 	sys.exit()
 
-def forward_alg(matrix_a, matrix_b, obs):
+def forward_alg(matrix_a, matrix_b, obs, num_to_token):
 	"""
 	DOESNT WORK
 	"""
 	# Create data structures for going back and forth between tokens in string
 	# form and integer form.
-	num_to_token = []
-	num_to_token.append('<START>')
-	for token in matrix_a:
-		# print(token)
-		if token not in ['<START>', '<END>', 0, '<SEEN>', '<NOT_SEEN_P>']:
-			# print(token)
-			num_to_token.append(token)
-	num_to_token.append('<END>')
+	# num_to_token = []
+	# num_to_token.append('<START>')
+	# for token in matrix_a:
+	# 	# print(token)
+	# 	if token not in ['<START>', '<END>', 0, '<SEEN>', '<NOT_SEEN_P>']:
+	# 		# print(token)
+	# 		num_to_token.append(token)
+	# num_to_token.append('<END>')
 
 	# init
 	alpha = init_forward(matrix_a, matrix_b, obs, num_to_token)
@@ -42,7 +42,7 @@ def forward_alg(matrix_a, matrix_b, obs):
 		result += math.log(transition) + forward
 
 
-	return result
+	return result, alpha
 
 def recursion_forward(matrix_a, matrix_b, obs, num_to_token, alpha):
 	"""
@@ -86,20 +86,20 @@ def init_forward(matrix_a, matrix_b, obs, num_to_token):
 
 	return alpha
 
-def backward_alg(matrix_a, matrix_b, obs):
+def backward_alg(matrix_a, matrix_b, obs, num_to_token):
 	"""
 	DOESNT WORK
 	"""
 	# Create data structures for going back and forth between tokens in string
 	# form and integer form.
-	num_to_token = []
-	num_to_token.append('<START>')
-	for token in matrix_a:
-		# print(token)
-		if token not in ['<START>', '<END>', 0, '<SEEN>', '<NOT_SEEN_P>']:
-			# print(token)
-			num_to_token.append(token)
-	num_to_token.append('<END>')
+	# num_to_token = []
+	# num_to_token.append('<START>')
+	# for token in matrix_a:
+	# 	# print(token)
+	# 	if token not in ['<START>', '<END>', 0, '<SEEN>', '<NOT_SEEN_P>']:
+	# 		# print(token)
+	# 		num_to_token.append(token)
+	# num_to_token.append('<END>')
 
 	# init
 	beta = init_backward(matrix_a, matrix_b, obs, num_to_token)
@@ -118,7 +118,7 @@ def backward_alg(matrix_a, matrix_b, obs):
 				  math.log(emission) + \
 				  backward
 
-	return result
+	return result, beta
 
 def recursion_backward(matrix_a, matrix_b, obs, num_to_token, beta):
 	"""
@@ -165,29 +165,68 @@ def forwardBackward(states, sent_list, Xx):
 	matrix_a = {}
 	matrix_b = {}
 	possible = len(states) ** 2
+
+	words_dict = {}
+	for line in sent_list:
+		for word in line.split(' '):
+			word = word.split('/')[0]
+
+			if word not in words_dict:
+				words_dict[word] = 1
+			else:
+				words_dict[word] += 1
+
 	for i in states:
 		matrix_a[i] = {}
 		matrix_b[i] = {}
 		for j in states:
-			matrix_a[i][j] = 1 / possible # enter prob here XX
+			matrix_a[i][j] = 1 / len(states) # what prob to enter here? XX
 
 		for line in sent_list:
 			for word in line.split(' '):
 				word = word.split('/')[0]
-				tag = word.split('/')[1]
 
 				if word not in matrix_b[i]:
-					matrix_b[i][word] = Xx # what prob to enter here? XX
+					matrix_b[i][word] = 1 / len(words_dict) # what prob to enter here? XX
 
 	# iterate until convergence
-	for i in range(1000): # change this to check convergence later on XX
+	for repeat in range(1000): # change this to check convergence later on XX
 		# E-step
-		Xx
+		gamma = Xx
+		xi = Xx
+
+		a_hat = Xx
+		b_hat = Xx
 
 		# M-step
+		for i in range(0, N + 1):
+			for j in range(0, N + 1):
+				a_num_sum = 0
+				for t in range(0, T - 1):
+					a_num_sum += xi[t][i][j]
+
+			a_denom_sum = 0
+			for t in range(0, T - 1):
+				for k in range(0, N + 1):
+					a_denom_sum += xi[t][i][k]
+
+		for j in range(0, N + 1): # XX
+			for v_k in b_hat[states.index(j)]: # XX
+				for w in sentence: # XX
+					b_num_sum = 0
+					for t in range(0, T):
+						if w == v_k: # such that XX
+							b_num_sum += gamma[t][j]
+
+					b_denom_sum = 0
+					for t in range(0, T):
+						b_denom_sum += gamma[t][j]
+
+					b_hat[states.index(j)][v_k] = math.log(b_num_sum) - math.log(b_denom_sum)
+
 		Xx
 
-	return A, B
+	return matrix_a, matrix_b
 
 def hmmTrainer(f):
 	"""
