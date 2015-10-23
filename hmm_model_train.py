@@ -179,7 +179,7 @@ def forwardBackward(states, sent_list, Xx):
 			gamma[t] = {}
 			for j in range(0, N + 1):
 				gamma[t][j] = (alpa[t][j] * beta[t][j]) / \
-							   alpha[T - 1][states.index('<END>')]
+							   final_alpha]
 
 		xi = {}
 		for t in range(0, T):
