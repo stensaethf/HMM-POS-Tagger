@@ -37,6 +37,12 @@ def forwardAlg(matrix_a, matrix_b, obs, num_to_token):
 
 		result = result + math.exp(math.log(transition) + forward)
 
+		# print(forward)
+		# print(transition)
+	
+	# print(matrix_a)	
+	# print(result)
+	# print(obs)
 	return math.log(result), alpha
 
 def recursionForward(matrix_a, matrix_b, obs, num_to_token, alpha):
@@ -48,10 +54,10 @@ def recursionForward(matrix_a, matrix_b, obs, num_to_token, alpha):
 
 	for t in range(1, T):
 		for j in range(1, N + 1):
-			sigma = 0
+			sigma = 0.00000000001
 			for i in range(1, N + 1):
 				transition = matrix_a[num_to_token[i]][num_to_token[j]]
-				emission = matrix_b[num_to_token[j]][obs[t].split('/')[0]]
+				emission = matrix_b[num_to_token[j]][obs[t].split('/')[0].lower()]
 				forward = alpha[t - 1][i]
 
 				new_unit = math.log(transition) + \
@@ -73,8 +79,18 @@ def initForward(matrix_a, matrix_b, obs, num_to_token):
 	# T rows, N columns
 	alpha = [[1 for i in range(N + 2)] for j in range(T)]
 	for j in range(1, N + 1):
+		# print(num_to_token)
+		# print(N)
+		# for i in matrix_a:
+		# 	print(i)
+
+		# print(j)
+		# print(len(num_to_token))
 		transition = matrix_a['<START>'][num_to_token[j]]
-		emission = matrix_b[num_to_token[j]][obs[0].split('/')[0]]
+
+		# print(obs[0])
+		# print(matrix_b[num_to_token[j]])
+		emission = matrix_b[num_to_token[j]][obs[0].split('/')[0].lower()]
 
 		alpha[0][j] = math.log(transition) + math.log(emission)
 
@@ -94,10 +110,10 @@ def backwardAlg(matrix_a, matrix_b, obs, num_to_token):
 	beta = recursionBackward(matrix_a, matrix_b, obs, num_to_token, beta)
 
 	# termination
-	result = 0
+	result = 0.00000000001
 	for j in range(1, N + 1):
 		transition = matrix_a['<START>'][num_to_token[j]]
-		emission = matrix_b[num_to_token[j]][obs[0].split('/')[0]]
+		emission = matrix_b[num_to_token[j]][obs[0].split('/')[0].lower()]
 		backward = beta[0][j]
 
 		new_unit = math.log(transition) + \
@@ -116,10 +132,10 @@ def recursionBackward(matrix_a, matrix_b, obs, num_to_token, beta):
 
 	for t in range(T - 2, -1, -1):
 		for i in range(1, N + 1):
-			sigma = 0
+			sigma = 0.00000000001
 			for j in range(1, N + 1):
 				transition = matrix_a[num_to_token[i]][num_to_token[j]]
-				emission = matrix_b[num_to_token[j]][obs[t + 1].split('/')[0]]
+				emission = matrix_b[num_to_token[j]][obs[t + 1].split('/')[0].lower()]
 				backward = beta[t + 1][j]
 
 				new_unit = math.log(transition) + \
@@ -162,9 +178,10 @@ def getZeta(matrix_a, matrix_b, alpha, beta, sentence, states):
 					# last word in the sentence.
 					zeta[t][i][j] = alpha[t][i] + math.log(matrix_a[states[i]]['<END>'])
 				else:
+					# print([sentence[t + 1].split('/')[0]])
 					zeta[t][i][j] = alpha[t][i] + \
 								    math.log(matrix_a[states[i]][states[j]]) + \
-								    math.log(matrix_b[states[j]][sentence[t + 1].split('/')[0]]) + \
+								    math.log(matrix_b[states[j]][sentence[t + 1].split('/')[0].lower()]) + \
 								    beta[t + 1][j]
 			# print(alpha[t][i])
 			# print(zeta[t][i])
@@ -201,28 +218,63 @@ def initAB(sent_list_list, states):
 	for line in sent_list_list:
 		for word in line:
 			if word != '':
-				word = word.split('/')[0]
+				word = word.split('/')[0].lower()
 
 				if word not in words_dict:
 					words_dict[word] = 1
 				else:
 					words_dict[word] += 1
 
-	counts_a = Xx
-	counts_b = Xx
+	sent_list_list_cheat = sent_list_list[:int(len(sent_list_list) / 4)]
+	for i, sent_list in enumerate(sent_list_list_cheat):
+		sent_list_list_cheat[i] = ' '.join(sent_list)
 
-	for i in states:
-		matrix_a[i] = {}
-		matrix_b[i] = {}
-		for j in states:
-			matrix_a[i][j] = 1 / len(states)
+	counts_a = hmm_model_build.getTransitionMatrix(sent_list_list_cheat)
+	counts_b = hmm_model_build.getEmissionMatrix(sent_list_list_cheat)
 
-		for line in sent_list_list:
-			for word in line:
-				word = word.split('/')[0]
 
-				if (word not in matrix_b[i]) and (word != ''):
-					matrix_b[i][word] = 1 / len(words_dict)
+	for line in sent_list_list:
+		for word in line:
+			word = word.split('/')[0].lower()
+
+			for state in states:
+				if state in counts_b:
+					if word not in counts_b[state]:
+						counts_b[state][word] = 0.00000000001 # e
+				else:
+					counts_b[state] = {}
+					counts_b[state][word] = 0.00000000001 # e
+
+				for next_state in states:
+					if state not in counts_a:
+						counts_a[state] = {}
+					
+					if next_state not in counts_a[state]:
+						counts_a[state][next_state] = 0.00000000001 # e
+
+
+	del counts_a['<NOT_SEEN_P>']
+
+	matrix_a = counts_a
+	matrix_b = counts_b
+
+	# print(counts_a)
+	# print()
+	# print(counts_b)
+	# sys.exit()
+
+	# for i in states:
+	# 	matrix_a[i] = {}
+	# 	matrix_b[i] = {}
+	# 	for j in states:
+	# 		matrix_a[i][j] = 1 / len(states)
+
+	# 	for line in sent_list_list:
+	# 		for word in line:
+	# 			word = word.split('/')[0]
+
+	# 			if (word not in matrix_b[i]) and (word != ''):
+	# 				matrix_b[i][word] = 1 / len(words_dict)
 
 	return matrix_a, matrix_b
 
@@ -259,7 +311,7 @@ def forwardBackward(states, sent_list):
 
 			for sent in sent_list:
 				for r_word in sent.split(' '):
-					word = r_word.split('/')[0]
+					word = r_word.split('/')[0].lower()
 					b_hat[state][word] = 1
 		count = 0
 		for sentence in sent_list_list:
@@ -296,7 +348,7 @@ def forwardBackward(states, sent_list):
 				for v_k in sentence:
 					b_hat_num = 0
 					for t in range(T):
-						if v_k.split('/')[0] == sentence[t].split('/')[0]:
+						if v_k.split('/')[0].lower() == sentence[t].split('/')[0].lower():
 							b_hat_num += math.exp(gamma[t][j])
 					# print(b_hat_denom)
 					# print(b_hat_num)
