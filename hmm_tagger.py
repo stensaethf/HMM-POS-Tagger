@@ -1,7 +1,7 @@
 '''
 hmm_tagger.py
 Frederik Roenn Stensaeth
-10.18.15
+10.23.15
 
 A Python program that uses the Viterbi algorithm and the model file that 
 was created to determine the most probable tag sequence given a sequence 
@@ -15,7 +15,10 @@ import math
 
 def printError():
 	"""
-	WORKS
+	printError() prints out a generic error message and a usage statement.
+
+	@params: n/a.
+	@return: n/a.
 	"""
 	print('Error.')
 	print('Usage: $ echo <string to be tagged> | python3 hmm_tagger.py',
@@ -24,7 +27,13 @@ def printError():
 
 def viterbi(matrix_a, matrix_b, obs, prob_unk_state):
 	"""
-	DOESNT WORK
+	viterb() takes A (tranisition) and B (emission) matrices, a list of
+	observations (list of words) and a probability for <unk> words.
+
+	@params: A and B matrices,
+			 list of observations (list of words),
+			 probability of <unk> words.
+	@return: list of observations with tags (list of strings).
 	"""
 	# Create data structures for going back and forth between tokens in string
 	# form and integer form.
@@ -49,7 +58,10 @@ def viterbi(matrix_a, matrix_b, obs, prob_unk_state):
 	# From here on we need to be defensive. The words may not have been seen
 	# before, so need to alter the code beneath so that it can handle that.
 
-	# initialization
+	# Initialization
+	# Sets up the viterbi and backpointer matrices.
+	# Loops over all the states and sets calculates the probability of going
+	# from <START> to that state.
 	for state in range(1, N + 1):
 		s = num_to_token[state]
 
@@ -71,47 +83,66 @@ def viterbi(matrix_a, matrix_b, obs, prob_unk_state):
 			# Havent seen that particular state in training.
 			emission = float('-inf')
 
-
-
+		# Set backpointers to 0 (no backpointer).
 		vit[state][0] = transition + emission
 		backpointer[state][0] = 0
 
-	# recursion
+	# Recursion
+	# Fills in the rest of the viterbi and backpointer matrices.
+	# Loops over all times and states, and then finds the probability
+	# of reaching that particular state and that given time.
 	for t in range(1, T):
 		for state in range(1, N + 1):
 			vit[state][t] = float('-inf')
 
 			s = num_to_token[state]
+
+			# Loops over the states, so that we can find the different
+			# transitions.
 			for sprev in range(1, N + 1):
 				sp = num_to_token[sprev]
 				if sp in matrix_a:
 					if s in matrix_a[sp]:
-						# everything is good.
+						# Everything is good.
 						transition = math.log(matrix_a[sp][s])
 					else:
-						# havent seen that state after sp.
+						# Havent seen that state after sp.
 						transition = float('-inf')
 				else:
-					# havent seen that state.
+					# Havent seen that state.
 					transition = float('-inf')
 
 				if s in matrix_b:
 					if obs[t].lower() in matrix_b[s]:
-						# everything is good
+						# Everything is good
 						emission = math.log(matrix_b[s][obs[t].lower()])
 					else:
-						# havent seen that combination.
-						emission = math.log(prob_unk_state)
+						# Havent seen that combination.
+						# XXXXXXXXXXX
+						if s == 'NOUN' and obs[t] == '<UNK>':
+							emission = math.log(0.5)
+						elif s == 'ADJ' and obs[t] == '<UNK>':
+							emission = math.log(0.1)
+						elif s == 'VERB' and obs[t] == '<UNK>':
+							emission = math.log(0.1)
+						else:
+							emission = math.log(prob_unk_state)
 				else:
-					# havent seen that state.
+					# Havent seen that state.
 					emission = float('-inf')
 
 				vtj = vit[sprev][t - 1] + transition + emission
+				# Checks if we have found a cheaper way of getting to the
+				# state at time t. If we have found a cheaper way, we update
+				# the cost of getting there and set the backpointer to
+				# whatever previous state got us there at this cheaper cost.
 				if vtj > vit[state][t]:
 					vit[state][t] = vtj
 					backpointer[state][t] = num_to_token[sprev]
 
-	# termination
+	# Termination
+	# Loops over the states to find the cost of reaching the end from that
+	# given state.
 	maximum = float('-inf')
 	final_state = None
 	for state in range(1, N + 1):
@@ -120,15 +151,13 @@ def viterbi(matrix_a, matrix_b, obs, prob_unk_state):
 		vit_num = vit[state][T - 1]
 		if s in matrix_a:
 			if '<END>' in matrix_a[s]:
-				# we're good
-				print(s)
-				print(matrix_a[s])
+				# We are good
 				transition = math.log(matrix_a[s]['<END>'])
 			else:
-				# havent seen <END> after that state
+				# Havent seen <END> after that state
 				transition = float('-inf')
 		else:
-			# havent seen that state
+			# Havent seen that state
 			transition = float('-inf')
 
 		temp = vit_num + transition
@@ -137,7 +166,7 @@ def viterbi(matrix_a, matrix_b, obs, prob_unk_state):
 			maximum = temp
 			final_state = s
 
-	# Trace our steps backwards in time to find the complete tag sequence.
+	# Traces our steps backwards in time to find the complete tag sequence.
 	final = final_state
 	backtrace = [final]
 	for t in range(T - 1, 0, -1):
@@ -145,7 +174,7 @@ def viterbi(matrix_a, matrix_b, obs, prob_unk_state):
 		final = backpointer[index][t]
 		backtrace = [final] + backtrace
 
-	# Construct the result.
+	# Constructs the result.
 	result = []
 	for i, word in enumerate(obs):
 		result.append(word + '/' + backtrace[i])
@@ -154,19 +183,26 @@ def viterbi(matrix_a, matrix_b, obs, prob_unk_state):
 
 def hmmTagger(f, std_in_raw):
 	"""
-	DOESNT WORK
+	hmmTagger() takes the content of a file and input from standard input, and
+	uses this to find the tag sequence for the input.
+
+	@params: content of file and string to be tagged (standard input).
+	@return: n/a (result is output to standard output).
 	"""
+	# Cleans the input and splits it into a list (split on spaces).
 	std_input = std_in_raw.read().strip().split(' ')
 
+	# Loads the file using pickle.
 	model = pickle.load(open(f, 'rb'))
 
+	# Tries to obtain the A and B matrices.
 	try:
 		matrix_a = model['a']
 		matrix_b = model['b']
 	except:
 		printError()
 
-	# Find seen words.
+	# Finds seen words.
 	seen = {}
 	for state in matrix_b:
 		if state not in [0]:
@@ -174,19 +210,19 @@ def hmmTagger(f, std_in_raw):
 				if word not in seen:
 					seen[word] = 1
 
-	# Find dictionary words
+	# Finds dictionary words
 	dictionary = {}
 	for word in open('/usr/share/dict/words', 'r'):
 		word = word.strip()
 		
-		# Add words we havent seen to dictionary.
+		# Adds words we havent seen to dictionary.
 		if word not in seen:
 			dictionary[word] = 1
 
 	prob_unk = (len(dictionary) - len(seen)) / len(dictionary)
 	prob_unk_state = prob_unk / 12
 
-	# Flag unknown words.
+	# Flags unknown words.
 	std_input_alter = []
 	for index in range(len(std_input)):
 		std_input_alter.append(std_input[index])
@@ -196,7 +232,7 @@ def hmmTagger(f, std_in_raw):
 	# Gets result from viterbi.
 	result_raw = viterbi(matrix_a, matrix_b, std_input_alter, prob_unk_state)
 
-	# Transform flagged unknown words back to 'normal' words.
+	# Transforms flagged unknown words back to 'normal' words.
 	for index in range(len(result_raw)):
 		word = result_raw[index].split('/')[0]
 		tag = result_raw[index].split('/')[1]
@@ -205,8 +241,8 @@ def hmmTagger(f, std_in_raw):
 			result_raw[index] = std_input[index] + '/' + tag
 
 	result = ' '.join(result_raw)
-	# print(result)
-	# send/ print to standard output.
+
+	# Sends/ prints the result to standard output.
 	sys.stdout.write(result)
 
 def main():
