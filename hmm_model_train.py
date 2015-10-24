@@ -3,6 +3,10 @@
 
 import pickle
 import sys
+import math
+import os.path
+import re
+import hmm_model_build
 
 def printError():
 	"""
@@ -10,12 +14,15 @@ def printError():
 	"""
 	print('Error.')
 	print('Usage: $ python3 hmm_model_train.py <input file>')
-	sys.exit()
+	sys.ezetat()
 
 def forwardAlg(matrix_a, matrix_b, obs, num_to_token):
 	"""
-	SHOULD WORK
+	WORKS
 	"""
+	N = len(matrix_a) - 2
+	T = len(obs)
+
 	# init
 	alpha = initForward(matrix_a, matrix_b, obs, num_to_token)
 
@@ -28,14 +35,13 @@ def forwardAlg(matrix_a, matrix_b, obs, num_to_token):
 		transition = matrix_a[num_to_token[i]]['<END>']
 		forward = alpha[T - 1][i]
 
-		result += math.log(transition) + forward
+		result = result + math.exp(math.log(transition) + forward)
 
-
-	return result, alpha
+	return math.log(result), alpha
 
 def recursionForward(matrix_a, matrix_b, obs, num_to_token, alpha):
 	"""
-	SHOULD WORK
+	WORKS
 	"""
 	N = len(matrix_a) - 2
 	T = len(obs)
@@ -45,31 +51,30 @@ def recursionForward(matrix_a, matrix_b, obs, num_to_token, alpha):
 			sigma = 0
 			for i in range(1, N + 1):
 				transition = matrix_a[num_to_token[i]][num_to_token[j]]
-				emission = matrix_b[num_to_token[j]][obs[t]]
+				emission = matrix_b[num_to_token[j]][obs[t].split('/')[0]]
 				forward = alpha[t - 1][i]
 
-				sigma = sigma + math.log(transition) \
-							  + math.log(emission) \
-							  + forward
+				new_unit = math.log(transition) + \
+						   math.log(emission) + \
+						   forward
+				sigma = sigma + math.exp(new_unit)
 
-			alpha[t][j] = sigma
-
+			alpha[t][j] = math.log(sigma)
 
 	return alpha
 
 def initForward(matrix_a, matrix_b, obs, num_to_token):
 	"""
-	SHOULD WORK
+	WORKS
 	"""
 	N = len(matrix_a) - 2
 	T = len(obs)
 
 	# T rows, N columns
 	alpha = [[1 for i in range(N + 2)] for j in range(T)]
-
 	for j in range(1, N + 1):
 		transition = matrix_a['<START>'][num_to_token[j]]
-		emission = matrix_b[num_to_token[j]][obs[0]]
+		emission = matrix_b[num_to_token[j]][obs[0].split('/')[0]]
 
 		alpha[0][j] = math.log(transition) + math.log(emission)
 
@@ -77,8 +82,11 @@ def initForward(matrix_a, matrix_b, obs, num_to_token):
 
 def backwardAlg(matrix_a, matrix_b, obs, num_to_token):
 	"""
-	SHOULD WORK
+	WORKS
 	"""
+	N = len(matrix_a) - 2
+	T = len(obs)
+
 	# init
 	beta = initBackward(matrix_a, matrix_b, obs, num_to_token)
 
@@ -89,41 +97,43 @@ def backwardAlg(matrix_a, matrix_b, obs, num_to_token):
 	result = 0
 	for j in range(1, N + 1):
 		transition = matrix_a['<START>'][num_to_token[j]]
-		emission = matrix_b[num_to_token[j]][obs[0]]
+		emission = matrix_b[num_to_token[j]][obs[0].split('/')[0]]
 		backward = beta[0][j]
 
-		result += math.log(transition) + \
-				  math.log(emission) + \
-				  backward
+		new_unit = math.log(transition) + \
+				   math.log(emission) + \
+				   backward
+		result = result + math.exp(new_unit)
 
-	return result, beta
+	return math.log(result), beta
 
 def recursionBackward(matrix_a, matrix_b, obs, num_to_token, beta):
 	"""
-	SHOULD WORK
+	WORKS
 	"""
 	N = len(matrix_a) - 2
 	T = len(obs)
 
-	for t in range(T - 2, -1, -1): # not sure about this
+	for t in range(T - 2, -1, -1):
 		for i in range(1, N + 1):
 			sigma = 0
 			for j in range(1, N + 1):
 				transition = matrix_a[num_to_token[i]][num_to_token[j]]
-				emission = matrix_b[num_to_token[j]][obs[t + 1]]
+				emission = matrix_b[num_to_token[j]][obs[t + 1].split('/')[0]]
 				backward = beta[t + 1][j]
 
-				sigma = sigma + math.log(transition) + \
-						 		math.log(emission) + \
-						 		backward
+				new_unit = math.log(transition) + \
+						   math.log(emission) + \
+						   backward
+				sigma = sigma + math.exp(new_unit)
 
-			beta[t][i] = sigma
+			beta[t][i] = math.log(sigma)
 
 	return beta
 
 def initBackward(matrix_a, matrix_b, obs, num_to_token):
 	"""
-	SHOULD WORK
+	WORKS
 	"""
 	N = len(matrix_a) - 2
 	T = len(obs)
@@ -135,7 +145,51 @@ def initBackward(matrix_a, matrix_b, obs, num_to_token):
 
 	return beta
 
-def forwardBackward(states, sent_list, Xx):
+def getZeta(matrix_a, matrix_b, alpha, beta, sentence, states):
+	"""
+	DOESNT WORK
+	"""
+	N = len(matrix_a) - 2
+	T = len(sentence)
+
+	zeta = {}
+	for t in range(0, T - 1): # should this be 'T - 1'? XX
+		zeta[t] = {}
+		for i in range(1, N + 1):
+			zeta[t][i] = {}
+			for j in range(1, N + 1):
+				if t == (T - 1):
+					# last word in the sentence.
+					zeta[t][i][j] = alpha[t][i] + math.log(matrix_a[states[i]]['<END>'])
+				else:
+					zeta[t][i][j] = alpha[t][i] + \
+								    math.log(matrix_a[states[i]][states[j]]) + \
+								    math.log(matrix_b[states[j]][sentence[t + 1].split('/')[0]]) + \
+								    beta[t + 1][j]
+			# print(alpha[t][i])
+			# print(zeta[t][i])
+	# print(zeta)
+	# print()
+	return zeta
+
+def getGamma(matrix_a, alpha, beta, final_alpha, sentence):
+	"""
+	DOESNT WORK
+	"""
+	N = len(matrix_a) - 2
+	T = len(sentence)
+
+	gamma = {}
+	for t in range(0, T):
+		gamma[t] = {}
+		for j in range(1, N + 1):
+			gamma[t][j] = alpha[t][j] + beta[t][j] - final_alpha
+
+	# print(gamma)
+	# print()
+	return gamma
+
+def initAB(sent_list_list, states):
 	"""
 	DOESNT WORK
 	"""
@@ -144,104 +198,179 @@ def forwardBackward(states, sent_list, Xx):
 	matrix_b = {}
 
 	words_dict = {}
-	for line in sent_list:
-		for word in line.split(' '):
-			word = word.split('/')[0]
+	for line in sent_list_list:
+		for word in line:
+			if word != '':
+				word = word.split('/')[0]
 
-			if word not in words_dict:
-				words_dict[word] = 1
-			else:
-				words_dict[word] += 1
+				if word not in words_dict:
+					words_dict[word] = 1
+				else:
+					words_dict[word] += 1
+
+	counts_a = Xx
+	counts_b = Xx
 
 	for i in states:
 		matrix_a[i] = {}
 		matrix_b[i] = {}
 		for j in states:
-			matrix_a[i][j] = 1 / len(states) # what prob to enter here? XX
+			matrix_a[i][j] = 1 / len(states)
 
-		for line in sent_list:
-			for word in line.split(' '):
+		for line in sent_list_list:
+			for word in line:
 				word = word.split('/')[0]
 
-				if word not in matrix_b[i]:
-					matrix_b[i][word] = 1 / len(words_dict) # what prob to enter here? XX
+				if (word not in matrix_b[i]) and (word != ''):
+					matrix_b[i][word] = 1 / len(words_dict)
+
+	return matrix_a, matrix_b
+
+def forwardBackward(states, sent_list):
+	"""
+	DOESNT WORK
+	"""
+	sent_list_list = []
+	for line in sent_list:
+		new_sent = []
+		for word in line.split(' '):
+			if word != '':
+				new_sent.append(word)
+
+		if len(new_sent) != 0:
+			sent_list_list.append(new_sent)
+
+	# initialize A, B
+	matrix_a, matrix_b = initAB(sent_list_list, states)
 
 	# iterate until convergence
-	for repeat in range(1000): # change this to check convergence later on XX
-		sentence = sent_list[0] # XXXXXXXXXXX
-
-		N = len(states) - 2
-		T = len(sentence)
-
-		alpha, final_alpha = forwardAlg(matrix_a, matrix_b, sentence, states) # XX
-		beta, final_beta = backwardAlg(matrix_a, matrix_b, sentence, states) # XX
-
-		# E-step
-		gamma = {}
-		for t in range(0, T):
-			gamma[t] = {}
-			for j in range(0, N + 1):
-				gamma[t][j] = (alpha[t][j] * beta[t][j]) / final_alpha
-
-		xi = {}
-		for t in range(0, T): # should this be 'T - 1'? XX
-			xi[t] = {}
-			for i in range(0, N + 1):
-				xi[t][i] = {}
-				for j in range(0, N + 1):
-					if t == (T - 1):
-						# last word in the sentence.
-						xi[t][i][j] = alpha[t][i] + math.log(matrix_a[states[i]]['<END>'])
-					else:
-						xi[t][i][j] = alpha[t][i] + \
-									  math.log(matrix_a[states[i]][states[j]]) + \
-									  math.log(matrix_b[states[j]][sentence[t + 1]]) + \
-									  beta[t + 1][j] # what do we do here when T for beta and alpha? XX
-
-		# Setup a_hat and b_hat
+	for repeat in range(5): # change this to check convergence later on XX
+		print(repeat)
+		# Crate a_hat and b_hat.
 		a_hat = {}
 		b_hat = {}
+
 		for state in states:
 			a_hat[state] = {}
 			b_hat[state] = {}
 
 			for s in states:
-				a_hat[state][s] = False
+				a_hat[state][s] = 1
 
 			for sent in sent_list:
-				for word in sent.split(' '):
-					b_hat[state][word] = False
+				for r_word in sent.split(' '):
+					word = r_word.split('/')[0]
+					b_hat[state][word] = 1
+		count = 0
+		for sentence in sent_list_list:
+			print(count)
+			count += 1
+			N = len(states) - 2
+			T = len(sentence)
 
-		# M-step
-		for i in range(0, N + 1):
-			for j in range(0, N + 1):
-				a_num_sum = 0
-				for t in range(0, T - 1):
-					a_num_sum += xi[t][i][j]
+			# print(sentence)
 
-				a_denom_sum = 0
-				for t in range(0, T - 1):
-					for k in range(0, N + 1):
-						a_denom_sum += xi[t][i][k]
+			# Get alpha and beta for the observation.
+			final_alpha, alpha = forwardAlg(matrix_a, matrix_b, sentence, states) # XX
+			final_beta, beta = backwardAlg(matrix_a, matrix_b, sentence, states) # XX
 
-				a_hat[states[i]][states[j]] = a_num_sum / a_denom_sum
+			# print(final_alpha)
+			# print(final_beta)
+			# print()
 
-		for j in range(0, N + 1): # XX
-			for v_k in b_hat[states[j]]: # XX
-				for w in sentence: # XX
-					b_num_sum = 0
-					for t in range(0, T):
-						if w == v_k: # such that XX
-							b_num_sum += gamma[t][j]
+			# print(final_alpha)
+			# print(final_beta)
 
-					b_denom_sum = 0
-					for t in range(0, T):
-						b_denom_sum += gamma[t][j]
+			# Get gamma and zeta for the observation.
+			zeta = getZeta(matrix_a, matrix_b, alpha, beta, sentence, states)
+			gamma = getGamma(matrix_a, alpha, beta, final_alpha, sentence)
+			# print(gamma)
+			# print()
+			# Find new a_hat and b_hat counts/ probs.
+			# M-step.
+			# print('ajanfnlkeanlkfaenlfanklklnankank1')
 
-					b_hat[states[j]][v_k] = b_num_sum / b_denom_sum
+			for j in range(1, N + 1):
+				b_hat_denom = sum([math.exp(gamma[t][j]) for t in range(T)])
 
-		Xx
+				for v_k in sentence:
+					b_hat_num = 0
+					for t in range(T):
+						if v_k.split('/')[0] == sentence[t].split('/')[0]:
+							b_hat_num += math.exp(gamma[t][j])
+					# print(b_hat_denom)
+					# print(b_hat_num)
+					# print(v_k.split('/')[0])
+					# print(math.log(b_hat_num))
+					# print(math.log(b_hat_denom))
+					b_hat[states[j]][v_k.split('/')[0]] = math.exp(math.log(b_hat_num) - math.log(b_hat_denom))
 
+			# print('zeta')
+			for i in range(1, N + 1):
+				for j in range(1, N + 1):
+					a_hat_num = 0
+					a_hat_denom = 0
+					for t in range(0, T - 1):
+						# print(sentence)
+						# print(t)
+						# print(zeta[t])
+						a_hat_num += math.exp(zeta[t][i][j])
+
+						a_hat_denom += sum(math.exp(zeta[t][i][k]) for k in range(1, N + 1))
+					print(a_hat_num)
+					print(a_hat_denom)
+					if a_hat_denom != 0:
+						a_hat[states[i]][states[j]] = math.exp(math.log(a_hat_num) - math.log(a_hat_denom))
+
+
+		# Normalize a_hat
+		for s_f in a_hat:
+			total = sum([a_hat[s_f][s_s] for s_s in a_hat[s_f]])
+
+			for s_s in a_hat[s_f]:
+				a_hat[s_f][s_s] = (a_hat[s_f][s_s] / total)
+
+		# Normalize b_hat
+		for s_f in b_hat:
+			total = sum([b_hat[s_f][state] for state in b_hat[s_f]])
+
+			for state in b_hat[s_f]:
+				b_hat[s_f][state] = b_hat[s_f][state] / total
+
+
+		# for s_f in a_hat:
+		# 	total = 0
+		# 	for s_s in a_hat[s_f]:
+		# 		total += a_hat[s_f][s_s]
+		# 	# print(s_f)
+		# 	# print(a_hat[s_f])
+		# 	for s_s in a_hat[s_f]:
+		# 		if s_f != '<END>':
+		# 			print(a_hat[s_f][s_s])
+		# 			a_hat[s_f][s_s] = (a_hat[s_f][s_s] / total)
+		# 		else:
+		# 			a_hat[s_f][s_s] = 0
+
+		# # Normalize b_hat
+		# for state in b_hat:
+		# 	total = 0
+		# 	for word in b_hat[state]:
+		# 		total += b_hat[state][word]
+
+		# 	for word in b_hat[state]:
+		# 		if state != '<END>' and state != '<START>':
+		# 			# print(word)
+		# 			# print(state)
+		# 			# print(b_hat[state])
+		# 			b_hat[state][word] = (b_hat[state][word] / total)
+		# 		else:
+		# 			b_hat[state][word] = 0
+
+		# Set A and B to a_hat and b_hat.
+		matrix_a = a_hat
+		matrix_b = b_hat
+
+	# sys.exit()
 	return matrix_a, matrix_b
 
 def hmmTrainer(f):
@@ -255,9 +384,10 @@ def hmmTrainer(f):
 
 	sent_list = []
 	for line in f:
-		sent_list.append(line.lower()) # lower case? XX
+		new_line = re.sub('(\n)+', ' ', line)
+		sent_list.append(new_line) # lower case? XX
 
-	matrix_a, matrix_b = forwardBackward(states, sent_list, Xx)
+	matrix_a, matrix_b = forwardBackward(states, sent_list)
 
 	model = {}
 	model['a'] = matrix_a

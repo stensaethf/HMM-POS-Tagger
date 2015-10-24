@@ -22,7 +22,7 @@ def printError():
 	      '[countmodel.dat | trainmodel.dat]')
 	sys.exit()
 
-def viterbi(matrix_a, matrix_b, obs):
+def viterbi(matrix_a, matrix_b, obs, prob_unk_state):
 	"""
 	DOESNT WORK
 	"""
@@ -31,13 +31,9 @@ def viterbi(matrix_a, matrix_b, obs):
 	num_to_token = []
 	num_to_token.append('<START>')
 	for token in matrix_a:
-		# print(token)
 		if token not in ['<START>', '<END>', 0, '<SEEN>', '<NOT_SEEN_P>']:
-			# print(token)
 			num_to_token.append(token)
 	num_to_token.append('<END>')
-	# print(num_to_token)
-	# print(num_to_token)
 
 	N = len(num_to_token) - 2 # Do not want to count <START> and <END>
 	T = len(obs)
@@ -56,49 +52,34 @@ def viterbi(matrix_a, matrix_b, obs):
 	# initialization
 	for state in range(1, N + 1):
 		s = num_to_token[state]
-		# print(s)
-		# print(matrix_a['<START>'][s])
-		# print(s)
-		# print(obs[0])
 
 		if s in matrix_a['<START>']:
 			# Everything is good.
-			transition = matrix_a['<START>'][s]
+			transition = math.log(matrix_a['<START>'][s])
 		else:
 			# Havent seen that particular state after <START>.
-			transition = 0.00001 # gt
+			transition = float('-inf')
 
 		if s in matrix_b:
 			if obs[0].lower() in matrix_b[s]:
 				# Everything is good.
-				emission = matrix_b[s][obs[0].lower()]
+				emission = math.log(matrix_b[s][obs[0].lower()])
 			else:
 				# Havent seen that word with that state before.
-				emission = 0.00001
+				emission = math.log(prob_unk_state)
 		else:
 			# Havent seen that particular state in training.
-			emission = 0.00001
+			emission = float('-inf')
 
 
 
-		vit[state][0] = math.log(transition) + math.log(emission)
+		vit[state][0] = transition + emission
 		backpointer[state][0] = 0
-
-	# print(backpointer)
-	# print()
-	# print(vit)
-
-	####
-	# WORKS TILL HERE
-	####
 
 	# recursion
 	for t in range(1, T):
 		for state in range(1, N + 1):
 			vit[state][t] = float('-inf')
-			# print()
-			# print(vit)
-			# print()
 
 			s = num_to_token[state]
 			for sprev in range(1, N + 1):
@@ -106,41 +87,29 @@ def viterbi(matrix_a, matrix_b, obs):
 				if sp in matrix_a:
 					if s in matrix_a[sp]:
 						# everything is good.
-						transition = matrix_a[sp][s]
+						transition = math.log(matrix_a[sp][s])
 					else:
 						# havent seen that state after sp.
-						transition = 0.00001 # gt
+						transition = float('-inf')
 				else:
 					# havent seen that state.
-					transition = 0.00001
+					transition = float('-inf')
 
 				if s in matrix_b:
 					if obs[t].lower() in matrix_b[s]:
 						# everything is good
-						emission = matrix_b[s][obs[t].lower()]
+						emission = math.log(matrix_b[s][obs[t].lower()])
 					else:
 						# havent seen that combination.
-						emission = 0.00001
+						emission = math.log(prob_unk_state)
 				else:
 					# havent seen that state.
-					emission = 0.00001
+					emission = float('-inf')
 
-				vtj = vit[sprev][t - 1] + math.log(transition) + math.log(emission)
-				# print(vtj)
-				# print(vit[state][t])
+				vtj = vit[sprev][t - 1] + transition + emission
 				if vtj > vit[state][t]:
 					vit[state][t] = vtj
 					backpointer[state][t] = num_to_token[sprev]
-	# print(vit)
-	# print(len(vit))
-	# print(len(vit[0]))
-	# sys.exit()
-	# print(backpointer)
-	# sys.exit()
-
-	####
-	# SHOULD WORK TILL HERE
-	####
 
 	# termination
 	maximum = float('-inf')
@@ -149,71 +118,37 @@ def viterbi(matrix_a, matrix_b, obs):
 		s = num_to_token[state]
 
 		vit_num = vit[state][T - 1]
-		# print(s)
-		# print(matrix_a[s])
 		if s in matrix_a:
 			if '<END>' in matrix_a[s]:
 				# we're good
-				transition = matrix_a[s]['<END>']
+				print(s)
+				print(matrix_a[s])
+				transition = math.log(matrix_a[s]['<END>'])
 			else:
 				# havent seen <END> after that state
-				transition = 0.00001
+				transition = float('-inf')
 		else:
 			# havent seen that state
-			transition = 0.00001
+			transition = float('-inf')
 
-		temp = vit_num + math.log(transition)
-
-		# print('temp: ' + str(temp))
-		# print('max: ' + str(maximum))
+		temp = vit_num + transition
 
 		if temp > maximum:
-			# '<END>'
-			# print(transition)
-			# print(vit_num)
-			# print('entered entered entered entered entered entered')
-			# for index in range(1, N):
-			# 	vit[index][T] = vit_num + math.log(transition)
-			# 	# print(s)
-			# 	# print(temp)
-			# 	backpointer[index][T] = s
 			maximum = temp
 			final_state = s
-
-	# print(maximum)
-	# print(s)
-	# print(backpointer[num_to_token.index(s)][T - 1])
-	# print(backpointer[num_to_token.index(backpointer[num_to_token.index(s)][T - 1])][T - 1])
-	# sys.exit()
-
-	# Find sequence of tags via the backpointer matrix.
-
-	# print()
-	# print(vit)
-	# print()
-	# print(backpointer)
-	# print('BACKTRACE')
 
 	# Trace our steps backwards in time to find the complete tag sequence.
 	final = final_state
 	backtrace = [final]
-	# print(final)
 	for t in range(T - 1, 0, -1):
-		# print(t)
-		# print(final)
 		index = num_to_token.index(final)
-		# print(index)
-		# print(backpointer[index][t])
 		final = backpointer[index][t]
 		backtrace = [final] + backtrace
-
-	# print(backtrace)
 
 	# Construct the result.
 	result = []
 	for i, word in enumerate(obs):
 		result.append(word + '/' + backtrace[i])
-	# print(result)
 
 	return result
 
@@ -231,8 +166,45 @@ def hmmTagger(f, std_in_raw):
 	except:
 		printError()
 
-	result = ' '.join(viterbi(matrix_a, matrix_b, std_input))
+	# Find seen words.
+	seen = {}
+	for state in matrix_b:
+		if state not in [0]:
+			for word in matrix_b[state]:
+				if word not in seen:
+					seen[word] = 1
 
+	# Find dictionary words
+	dictionary = {}
+	for word in open('/usr/share/dict/words', 'r'):
+		word = word.strip()
+		
+		# Add words we havent seen to dictionary.
+		if word not in seen:
+			dictionary[word] = 1
+
+	prob_unk = (len(dictionary) - len(seen)) / len(dictionary)
+	prob_unk_state = prob_unk / 12
+
+	# Flag unknown words.
+	std_input_alter = []
+	for index in range(len(std_input)):
+		std_input_alter.append(std_input[index])
+		if std_input[index].lower() not in seen:
+			std_input_alter[index] = '<UNK>'
+
+	# Gets result from viterbi.
+	result_raw = viterbi(matrix_a, matrix_b, std_input_alter, prob_unk_state)
+
+	# Transform flagged unknown words back to 'normal' words.
+	for index in range(len(result_raw)):
+		word = result_raw[index].split('/')[0]
+		tag = result_raw[index].split('/')[1]
+
+		if word == '<UNK>':
+			result_raw[index] = std_input[index] + '/' + tag
+
+	result = ' '.join(result_raw)
 	# print(result)
 	# send/ print to standard output.
 	sys.stdout.write(result)
