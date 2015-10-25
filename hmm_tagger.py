@@ -25,14 +25,15 @@ def printError():
 	      '[countmodel.dat | trainmodel.dat]')
 	sys.exit()
 
-def viterbi(matrix_a, matrix_b, obs, prob_unk_state):
+def viterbi(matrix_a, matrix_b, obs, prob_unk_state, real_obs):
 	"""
 	viterb() takes A (tranisition) and B (emission) matrices, a list of
 	observations (list of words) and a probability for <unk> words.
 
 	@params: A and B matrices,
 			 list of observations (list of words),
-			 probability of <unk> words.
+			 probability of <unk> words,
+			 real_obs.
 	@return: list of observations with tags (list of strings).
 	"""
 	# Create data structures for going back and forth between tokens in string
@@ -118,15 +119,13 @@ def viterbi(matrix_a, matrix_b, obs, prob_unk_state):
 						emission = math.log(matrix_b[s][obs[t].lower()])
 					else:
 						# Havent seen that combination.
-						# XXXXXXXXXXX
-						if s == 'NOUN' and obs[t] == '<UNK>':
-							emission = math.log(0.5)
-						elif s == 'ADJ' and obs[t] == '<UNK>':
-							emission = math.log(0.1)
-						elif s == 'VERB' and obs[t] == '<UNK>':
-							emission = math.log(0.1)
+						emission = math.log(prob_unk_state)
+						if obs[t] == '<UNK>':
+							emission = getEmissionUNK(s, t, real_obs, \
+													  prob_unk_state)
 						else:
-							emission = math.log(prob_unk_state)
+							if s == 'NUM' and obs[t].isdigit():
+								emission = math.log(1)
 				else:
 					# Havent seen that state.
 					emission = float('-inf')
@@ -181,6 +180,88 @@ def viterbi(matrix_a, matrix_b, obs, prob_unk_state):
 
 	return result
 
+def getEmissionUNK(s, t, real_obs, prob_unk_state):
+	"""
+	getEmissionUNK() finds the emission probabilty of an unknown word using
+	suffix patterns that are associated with certain parts of speech. The
+	log of the emission probability is returned.
+
+	@params: s (state),
+			 t (time),
+			 list of observations,
+			 probability of unk word.
+	@return: emission (~ math.log(prob)).
+	"""
+	# Checks for special suffixes and assigns emission probabilities 
+	# accordingly.
+	emission = math.log(prob_unk_state)
+	if s == 'NOUN':
+		if "'" in real_obs[t]:
+			emission = math.log(0.9)
+		elif real_obs[t][-1].lower() == '.':
+			if real_obs[t][0].upper() == real_obs[t][0]:
+				if len(real_obs[t]) <= 4:
+					if len(real_obs[t]) != 1:
+						emission = math.log(1)
+					else:
+						emission = math.log(0.5)
+				else:
+					emission = math.log(0.5)
+			else:
+				emission = math.log(0.5)
+		elif real_obs[t][-5:].lower() == 'arian':
+			emission = math.log(1)
+		elif real_obs[t][-4:].lower() in ['ment', 'ness', 'ship']:
+			emission = math.log(1)
+		elif real_obs[t][-3:].lower() in ['ion', 'ess', 'ent', 'ant', 'ity']:
+			emission = math.log(0.95)
+		elif real_obs[t][-2:].lower() in ['er', 'or', 'ar', 'ee', 'ty']:
+			emission = math.log(0.95)
+		elif real_obs[t][-1].lower() == 's':
+			emission = math.log(0.9)
+		else:
+			emission = math.log(0.5)
+	elif s == 'ADJ':
+		if real_obs[t][-4:].lower() in ['able', 'ible', 'less', 'like']:
+			emission = math.log(0.95)
+		elif real_obs[t][-2:].lower() == 'er':
+			emission = math.log(0.8)
+		elif real_obs[t][-3:].lower() in ['ive', 'ful', 'est', 'ese']:
+			emission = math.log(0.95)
+		elif real_obs[t][-3:].lower() == 'ish':
+			emission = math.log(1)
+		elif real_obs[t][-1].lower() == 'y':
+			emission = math.log(0.95)
+		else:
+			emission = math.log(0.25)
+	elif s == 'VERB':
+		if real_obs[t][-2:].lower() in ['ed', 'en']:
+			emission = math.log(0.9)
+		elif real_obs[t][-2:].lower() in ['es']:
+			emission = math.log(0.95)
+		elif real_obs[t][-3:].lower() in ['ing', 'ize']:
+			emission = math.log(1)
+		elif real_obs[t][-1].lower() == 's':
+			emission = math.log(0.8)
+		else:
+			emission = math.log(0.25)
+	elif s == 'NUM':
+		if real_obs[t].isdigit():
+			emission = math.log(1)
+		elif real_obs[t][-3:] == 'eth':
+			emission = math.log(1)
+		elif real_obs[t][-2:] == 'th':
+			emission = math.log(0.95)
+	elif s == 'ADV':
+		if real_obs[t][-3:].lower() == 'ily':
+			emission = math.log(1)
+		elif real_obs[t][-2:].lower() == 'ly':
+			emission = math.log(1)
+	else:
+		emission = math.log(prob_unk_state)
+
+	return emission
+
 def hmmTagger(f, std_in_raw):
 	"""
 	hmmTagger() takes the content of a file and input from standard input, and
@@ -230,7 +311,10 @@ def hmmTagger(f, std_in_raw):
 			std_input_alter[index] = '<UNK>'
 
 	# Gets result from viterbi.
-	result_raw = viterbi(matrix_a, matrix_b, std_input_alter, prob_unk_state)
+	result_raw = viterbi(matrix_a, matrix_b, \
+						 std_input_alter, \
+						 prob_unk_state, \
+						 std_input)
 
 	# Transforms flagged unknown words back to 'normal' words.
 	for index in range(len(result_raw)):
